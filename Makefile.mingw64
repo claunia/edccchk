@@ -1,7 +1,7 @@
 OBJS = edccchk.o
 CC = x86_64-pc-mingw64-gcc
 DEBUG = -g
-CFLAGS = -Wall -O0 -W -D_FILE_OFFSET_BITS=64 -std=c99 -static -c $(DEBUG)
+CFLAGS = -Wall -O0 -W -static -std=gnu99 -c $(DEBUG)
 LFLAGS = -Wall $(DEBUG)
 LIBS = 
 
