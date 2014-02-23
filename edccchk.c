@@ -188,95 +188,6 @@ static int8_t ecc_checksector(
 static const uint8_t zeroaddress[4] = {0, 0, 0, 0};
 
 ////////////////////////////////////////////////////////////////////////////////
-//
-// Check if this is a sector we can compress
-//
-// Sector types:
-//   0: Literal bytes (not a sector)
-//   1: 2352 mode 1         predict sync, mode, reserved, edc, ecc
-//   2: 2336 mode 2 form 1  predict redundant flags, edc, ecc
-//   3: 2336 mode 2 form 2  predict redundant flags, edc
-//
-static int8_t detect_sector(const uint8_t* sector, size_t size_available) {
-    if(
-        size_available >= 2352 &&
-        sector[0x000] == 0x00 && // sync (12 bytes)
-        sector[0x001] == 0xFF &&
-        sector[0x002] == 0xFF &&
-        sector[0x003] == 0xFF &&
-        sector[0x004] == 0xFF &&
-        sector[0x005] == 0xFF &&
-        sector[0x006] == 0xFF &&
-        sector[0x007] == 0xFF &&
-        sector[0x008] == 0xFF &&
-        sector[0x009] == 0xFF &&
-        sector[0x00A] == 0xFF &&
-        sector[0x00B] == 0x00 &&
-        sector[0x00F] == 0x01 && // mode (1 byte)
-        sector[0x814] == 0x00 && // reserved (8 bytes)
-        sector[0x815] == 0x00 &&
-        sector[0x816] == 0x00 &&
-        sector[0x817] == 0x00 &&
-        sector[0x818] == 0x00 &&
-        sector[0x819] == 0x00 &&
-        sector[0x81A] == 0x00 &&
-        sector[0x81B] == 0x00
-    ) {
-        //
-        // Might be Mode 1
-        //
-        if(
-            ecc_checksector(
-                sector + 0xC,
-                sector + 0x10,
-                sector + 0x81C
-            ) &&
-            edc_compute(0, sector, 0x810) == get32lsb(sector + 0x810)
-        ) {
-            return 1; // Mode 1
-        }
-
-    } else if(
-        size_available >= 2336 &&
-        sector[0] == sector[4] && // flags (4 bytes)
-        sector[1] == sector[5] && //   versus redundant copy
-        sector[2] == sector[6] &&
-        sector[3] == sector[7]
-    ) {
-        //
-        // Might be Mode 2, Form 1 or 2
-        //
-        if(
-            ecc_checksector(
-                zeroaddress,
-                sector,
-                sector + 0x80C
-            ) &&
-            edc_compute(0, sector, 0x808) == get32lsb(sector + 0x808)
-        ) {
-            return 2; // Mode 2, Form 1
-        }
-        //
-        // Might be Mode 2, Form 2
-        //
-        if(
-            edc_compute(0, sector, 0x91C) == get32lsb(sector + 0x91C)
-        ) {
-            return 3; // Mode 2, Form 2
-        }
-    }
-
-    //
-    // Nothing
-    //
-    return 0;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-
-static uint8_t sector_buffer[2352];
-
-////////////////////////////////////////////////////////////////////////////////
 
 static off_t mycounter_analyze = (off_t)-1;
 static off_t mycounter_encode  = (off_t)-1;
@@ -306,12 +217,6 @@ static void setcounter_analyze(off_t n) {
     if(p) { encode_progress(); }
 }
 
-static void setcounter_encode(off_t n) {
-    int8_t p = ((n >> 20) != (mycounter_encode >> 20));
-    mycounter_encode = n;
-    if(p) { encode_progress(); }
-}
-
 ////////////////////////////////////////////////////////////////////////////////
 //
 // Returns nonzero on error
@@ -329,20 +234,9 @@ static int8_t ecmify(
 
     uint32_t input_edc = 0;
 
-    //
-    // Current sector type (run)
-    //
-    int8_t   curtype = -1; // not a valid type
-    uint32_t curtype_count = 0;
-    off_t    curtype_in_start = 0;
-
-    uint32_t literal_skip = 0;
-
     off_t input_file_length;
     off_t input_bytes_checked = 0;
     off_t input_bytes_queued  = 0;
-
-    off_t typetally[4] = {0,0,0,0};
 
     size_t queue_size = ((size_t)(-1)) - 4095;
     if((unsigned long)queue_size > 0x40000lu) {
