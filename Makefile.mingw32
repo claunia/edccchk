@@ -1,0 +1,21 @@
+OBJS = edccchk.o
+CC = i686-pc-mingw32-gcc
+DEBUG = -g
+CFLAGS = -Wall -O0 -W -D_FILE_OFFSET_BITS=64 -std=c99 -static -c $(DEBUG)
+LFLAGS = -Wall $(DEBUG)
+LIBS = 
+
+edccchk : $(OBJS)
+	$(CC) $(LFLAGS) $(LIBS) $(OBJS) -o edccchk.exe
+
+edccchk.o : edccchk.c common.h banner.h version.h
+	$(CC) $(CFLAGS) edccchk.c
+
+clean:
+	\rm *.o edccchk.exe
+
+tar:
+	zip -9 edccchk-src.zip banner.h common.h edccchk.c LICENSE Makefile README.md version.h
+
+bindist : edccchk
+	zip -9 edccchk-bin-win32.zip edccchk.exe LICENSE README.md
