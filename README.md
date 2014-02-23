@@ -4,6 +4,7 @@ edccchk v1.0
 EDC/ECC checker for RAW (2352 bytes/sector) CD images
 
 Copyright © 2013 Natalia Portillo <claunia@claunia.com>
+
 Based on ECM v1.03 Copyright © 2002-2011 Neill Corlett
 
 Usage
@@ -16,9 +17,9 @@ edccchk <cdimage>
 Features
 ========
 
-Checks EDC and ECC fields consistency of CD sectors.
-Supports Mode 0, Mode 1 and Mode 2 data sectors, ignores Audio sectors.
-Shows failing sectors as MSF.
+* Checks EDC and ECC fields consistency of CD sectors.
+* Supports Mode 0, Mode 1 and Mode 2 data sectors, ignores Audio sectors.
+* Shows failing sectors as MSF.
 
 Known bugs
 ==========
@@ -28,8 +29,9 @@ Mode 2 form-less sectors all appear as errors. Mode 2 form 1 and form 2 sectors 
 Changelog
 =========
 
-2013/12/08	v1.00	Converted ECM code to only check sectors.
-			Added support for mode 0 sectors.
+2013/12/08	v1.00
+* Converted ECM code to only check sectors.
+* Added support for mode 0 sectors.
 
 To-Do
 =====
