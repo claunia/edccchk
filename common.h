@@ -555,7 +555,7 @@ void printfileerror(FILE* f, const char* name) {
     int e = errno;
     printf("Error: ");
     if(name) { printf("%s: ", name); }
-    printf("%s\n", f && feof(f) ? "Unexpected end-of-file" : strerror(e));
+    printf("%s (%d)\n", f && feof(f) ? "Unexpected end-of-file" : strerror(e), e);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
