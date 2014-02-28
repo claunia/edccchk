@@ -282,7 +282,7 @@ static int8_t ecmify(
     totalerrors= 0;
 
     for(;;) {
-        int8_t detecttype;
+        int8_t detecttype = 0;
 
         //
         // Refill queue if necessary
