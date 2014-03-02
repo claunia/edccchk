@@ -398,7 +398,7 @@ static int8_t ecmify(
                 if((sector[0x012] & 0x20) == 0x20) // mode 2 form 2
                 {
                     mode2f2sectors++;
-                    if(edc_compute(0, m2sec, 0x91C) != get32lsb(m2sec + 0x91C))
+                    if(edc_compute(0, m2sec, 0x91C) != get32lsb(m2sec + 0x91C) && get32lsb(m2sec + 0x91C) != 0)
                     {
                         fprintf(stderr, "Mode 2 form 2 sector with error at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                         mode2f2errors++;
