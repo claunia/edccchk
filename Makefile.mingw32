@@ -1,11 +1,11 @@
 OBJS = edccchk.o
-CC = i686-pc-mingw32-gcc
+CC = i686-w64-mingw32-gcc
 DEBUG = -g
-CFLAGS = -Wall -O0 -W -static -std=gnu99 -c $(DEBUG)
+CFLAGS = -Wall -O3 -W -static -std=gnu99 -c $(DEBUG)
 LFLAGS = -Wall $(DEBUG)
 LIBS = 
 
-edccchk : $(OBJS)
+edccchk.exe : $(OBJS)
 	$(CC) $(LFLAGS) $(LIBS) $(OBJS) -o edccchk.exe
 
 edccchk.o : edccchk.c common.h banner.h version.h

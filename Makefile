@@ -1,7 +1,7 @@
 OBJS = edccchk.o
 CC = gcc
-DEBUG = -g
-CFLAGS = -Wall -O0 -W -std=gnu99 -c $(DEBUG)
+DEBUG = 
+CFLAGS = -Wall -O3 -W -std=gnu99 -c $(DEBUG)
 LFLAGS = -Wall $(DEBUG)
 LIBS = 
 
