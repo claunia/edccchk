@@ -1,4 +1,4 @@
-edccchk v1.10
+edccchk v1.11
 =============
 
 EDC/ECC checker for RAW (2352 bytes/sector) CD images
@@ -21,6 +21,11 @@ Features
 * Supports Mode 0, Mode 1 and Mode 2 data sectors, ignores Audio sectors.
 * Shows failing sectors as MSF.
 
+Known bugs
+==========
+
+* Total sectors count gets always 1 more than sectors exist.
+
 Changelog
 =========
 
@@ -30,6 +35,9 @@ Changelog
 
 2014/03/02	v1.10
 * Corrected handling of mode 2 form 2 sectors with omitted EDC. Side-effect, corrects mode 2 form-less sectors processing.
+
+2014/03/02	v1.11
+* Corrected sum of total errors.
 
 To-Do
 =====

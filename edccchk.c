@@ -402,6 +402,7 @@ static int8_t ecmify(
                     {
                         fprintf(stderr, "Mode 2 form 2 sector with error at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                         mode2f2errors++;
+			totalerrors++;
                     }
                 }
                 else
@@ -417,6 +418,7 @@ static int8_t ecmify(
                     {
                         fprintf(stderr, "Mode 2 form 1 sector with error at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                         mode2f1errors++;
+			totalerrors++;
                     }
                 }
             }
