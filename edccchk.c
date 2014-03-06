@@ -82,10 +82,13 @@ static uint32_t mode1sectors;
 static uint32_t mode1errors;
 static uint32_t mode2f1sectors;
 static uint32_t mode2f1errors;
+static uint32_t mode2f1warnings;
 static uint32_t mode2f2sectors;
 static uint32_t mode2f2errors;
+static uint32_t mode2f2warnings;
 static uint32_t totalsectors;
 static uint32_t totalerrors;
+static uint32_t totalwarnings;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -276,8 +279,10 @@ static int8_t ecmify(
     mode1errors= 0;
     mode2f1sectors= 0;
     mode2f1errors= 0;
+    mode2f1warnings = 0;
     mode2f2sectors= 0;
     mode2f2errors= 0;
+    mode2f2warnings = 0;
     totalsectors= 0;
     totalerrors= 0;
 
@@ -389,6 +394,12 @@ static int8_t ecmify(
                     mode1errors++;
                     totalerrors++;
                     fprintf(stderr, "Mode 1 sector with error at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+		    if(edc_compute(0, sector, 0x810) != get32lsb(sector + 0x810))
+			fprintf(stderr, "%02X:%02X:%02X: Failed EDC\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+		    if(!ecc_checkpq(sector + 0xC, sector + 0x10, 86, 24,  2, 86, sector + 0x81C))
+			fprintf(stderr, "%02X:%02X:%02X: Failed ECC P\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+		    if(!ecc_checkpq(sector + 0xC, sector + 0x10, 52, 43, 86, 88, sector + 0x81C + 0xAC))
+			fprintf(stderr, "%02X:%02X:%02X: Failed ECC Q\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                 }
             }
             else if(sector[0x00F] == 0x02) // mode (1 byte)
@@ -401,9 +412,17 @@ static int8_t ecmify(
                     if(edc_compute(0, m2sec, 0x91C) != get32lsb(m2sec + 0x91C) && get32lsb(m2sec + 0x91C) != 0)
                     {
                         fprintf(stderr, "Mode 2 form 2 sector with error at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+			if(edc_compute(0, m2sec, 0x91C) != get32lsb(m2sec + 0x91C))
+                            fprintf(stderr, "%02X:%02X:%02X: Failed EDC\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                         mode2f2errors++;
 			totalerrors++;
                     }
+                    if(sector[0x010] != sector[0x014] || sector[0x011] != sector[0x015] || sector[0x012] != sector[0x016] || sector[0x013] != sector[0x017])
+		    {
+			mode2f2warnings++;
+			totalwarnings++;
+			fprintf(stderr, "Subheader copies differ in mode 2 form 2 sector at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+		    }
                 }
                 else
                 {
@@ -417,8 +436,20 @@ static int8_t ecmify(
                        edc_compute(0, m2sec, 0x808) != get32lsb(m2sec + 0x808))
                     {
                         fprintf(stderr, "Mode 2 form 1 sector with error at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+                        if(edc_compute(0, m2sec, 0x808) != get32lsb(m2sec + 0x808))
+                            fprintf(stderr, "%02X:%02X:%02X: Failed EDC\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+                        if(!ecc_checkpq(zeroaddress, m2sec, 86, 24,  2, 86, m2sec + 0x80C))
+                            fprintf(stderr, "%02X:%02X:%02X: Failed ECC P\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+                        if(!ecc_checkpq(zeroaddress, m2sec, 52, 43, 86, 88, m2sec + 0x80C))
+                            fprintf(stderr, "%02X:%02X:%02X: Failed ECC Q\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                         mode2f1errors++;
 			totalerrors++;
+                    }
+                    if(sector[0x010] != sector[0x014] || sector[0x011] != sector[0x015] || sector[0x012] != sector[0x016] || sector[0x013] != sector[0x017])
+                    {
+                        mode2f1warnings++;
+			totalwarnings++;
+                        fprintf(stderr, "Subheader copies differ in mode 2 form 1 sector at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                     }
                 }
             }
@@ -458,10 +489,14 @@ static int8_t ecmify(
     printf("\twith errors..... %d\n", mode1errors);
     printf("Mode 2 form 1 sectors... %d\n", mode2f1sectors);
     printf("\twith errors..... %d\n", mode2f1errors);
+    printf("\twith warnings... %d\n", mode2f1warnings);
     printf("Mode 2 form 2 sectors... %d\n", mode2f2sectors);
     printf("\twith errors..... %d\n", mode2f2errors);
+    printf("\twith warnings... %d\n", mode2f2warnings);
     printf("Total sectors........... %d\n", totalsectors);
     printf("Total errors............ %d\n", totalerrors);
+    printf("Total warnings.......... %d\n", totalwarnings);
+    printf("Total errors+warnings... %d\n", totalerrors + totalwarnings);
     //
     // Success
     //

@@ -1,4 +1,4 @@
-edccchk v1.11
+edccchk v1.20
 =============
 
 EDC/ECC checker for RAW (2352 bytes/sector) CD images
@@ -38,6 +38,11 @@ Changelog
 
 2014/03/02	v1.11
 * Corrected sum of total errors.
+
+2014/03/06	v1.20
+* When an error is detected, will tell if the error was detected with ECC P, ECC Q or EDC. Useful to detect EDC/ECC field corruption.
+* Shows a warning when mode 2 subheader copies differ. Other tools detect this as an error, but if both ECC and EDC are ok it's intentional.
+* Shows summary of total warnings and total errors+warnings.
 
 To-Do
 =====
