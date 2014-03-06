@@ -17,5 +17,5 @@ clean:
 tar:
 	zip -9 edccchk-src.zip banner.h common.h edccchk.c LICENSE Makefile README.md version.h
 
-bindist : edccchk
+bindist : edccchk.exe
 	zip -9 edccchk-bin-win32.zip edccchk.exe LICENSE README.md
