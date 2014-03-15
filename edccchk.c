@@ -67,6 +67,13 @@
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#ifdef DEBUG
+#define DPRINTF(fmt, ...) \
+do { printf("edccchk-debug: " fmt , ## __VA_ARGS__); } while (0)
+#else
+#define DPRINTF(fmt, ...) do {} while(0)
+#endif
+
 static uint32_t get32lsb(const uint8_t* src) {
     return
         (((uint32_t)(src[0])) <<  0) |
@@ -99,6 +106,7 @@ static uint8_t  ecc_b_lut[256];
 static uint32_t edc_lut  [256];
 
 static void eccedc_init(void) {
+    DPRINTF("Entering eccedc_init().\n");
     size_t i;
     for(i = 0; i < 256; i++) {
         uint32_t edc = i;
@@ -121,6 +129,7 @@ static uint32_t edc_compute(
     const uint8_t* src,
     size_t size
 ) {
+    DPRINTF("Entering edc_compute(%d, *%d, %d).\n");
     for(; size; size--) {
         edc = (edc >> 8) ^ edc_lut[(edc ^ (*src++)) & 0xFF];
     }
@@ -141,6 +150,7 @@ static int8_t ecc_checkpq(
     size_t minor_inc,
     const uint8_t* ecc
 ) {
+    DPRINTF("Entering ecc_checkpq(*%d, *%d, %d, %d, %d, %d, *%d).\n");
     size_t size = major_count * minor_count;
     size_t major;
     for(major = 0; major < major_count; major++) {
@@ -181,6 +191,7 @@ static int8_t ecc_checksector(
     const uint8_t *data,
     const uint8_t *ecc
 ) {
+    DPRINTF("Entering ecc_checksector(*%d, *%d, *%d).\n");
     return
         ecc_checkpq(address, data, 86, 24,  2, 86, ecc) &&      // P
         ecc_checkpq(address, data, 52, 43, 86, 88, ecc + 0xAC); // Q
@@ -227,6 +238,7 @@ static void setcounter_analyze(off_t n) {
 static int8_t ecmify(
     const char* infilename
 ) {
+    DPRINTF("Entering ecmify(\"%s\").\n", infilename);
     int8_t returncode = 0;
 
     FILE* in  = NULL;
@@ -249,6 +261,7 @@ static int8_t ecmify(
     //
     // Allocate space for queue
     //
+    DPRINTF("ecmify(): Allocation memory for queue.\n");
     queue = malloc(queue_size);
     if(!queue) {
         printf("Out of memory\n");
@@ -258,6 +271,7 @@ static int8_t ecmify(
     //
     // Open both files
     //
+    DPRINTF("ecmify(): Opening file \"%s\".\n", infilename);
     in = fopen(infilename, "rb");
     if(!in) { goto error_in; }
 
@@ -266,8 +280,10 @@ static int8_t ecmify(
     //
     // Get the length of the input file
     //
+    DPRINTF("ecmify(): Seeking to end of file.\n");
     if(fseeko(in, 0, SEEK_END) != 0) { goto error_in; }
     input_file_length = ftello(in);
+    DPRINTF("ecmify(): Got file length %d.\n", input_file_length);
     if(input_file_length < 0) { goto error_in; }
 
     resetcounter(input_file_length);
@@ -286,6 +302,7 @@ static int8_t ecmify(
     totalsectors= 0;
     totalerrors= 0;
 
+    DPRINTF("ecmify(): Entering main loop.\n");
     for(;;) {
         int8_t detecttype = 0;
 
@@ -296,12 +313,14 @@ static int8_t ecmify(
             (queue_bytes_available < 2352) &&
             (((off_t)queue_bytes_available) < (input_file_length - input_bytes_queued))
         ) {
+            DPRINTF("ecmify(): Refilling queue.\n");
             //
             // We need to read more data
             //
             off_t willread = input_file_length - input_bytes_queued;
             off_t maxread = queue_size - queue_bytes_available;
             if(willread > maxread) {
+                DPRINTF("Will read maximum.\n");
                 willread = maxread;
             }
 
@@ -331,6 +350,7 @@ static int8_t ecmify(
         }
 
         if(queue_bytes_available == 0) {
+            DPRINTF("ecmify(): No data left in queue.\n");
             //
             // No data left to read -> quit
             //
@@ -356,10 +376,12 @@ static int8_t ecmify(
         sector[0x00B] == 0x00
             )
         {
+            DPRINTF("ecmify(): Data sector, address %02X:%02X:%02X.\n", sector[0x00C], sector[0x00D], sector[0x00E]);
             // Just for debug
 //            fprintf(stderr, "Address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
             if(sector[0x00F] == 0x00) // mode (1 byte)
             {
+                DPRINTF("ecmify(): Mode 0 sector at address %02X:%02X:%02X.\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                 mode0sectors++;
                 for(int i=0x010;i < 0x930;i++)
                 {
@@ -374,6 +396,7 @@ static int8_t ecmify(
             }
             else if(sector[0x00F] == 0x01) // mode (1 byte)
             {
+                DPRINTF("ecmify(): Mode 1 sector at address %02X:%02X:%02X.\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                 mode1sectors++;
                 if(
                    !ecc_checksector(
@@ -404,6 +427,7 @@ static int8_t ecmify(
             }
             else if(sector[0x00F] == 0x02) // mode (1 byte)
             {
+                DPRINTF("ecmify(): Mode 2 sector at address %02X:%02X:%02X.\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                 uint8_t* m2sec = sector + 0x10;
                 
                 if((sector[0x012] & 0x20) == 0x20) // mode 2 form 2
@@ -412,17 +436,17 @@ static int8_t ecmify(
                     if(edc_compute(0, m2sec, 0x91C) != get32lsb(m2sec + 0x91C) && get32lsb(m2sec + 0x91C) != 0)
                     {
                         fprintf(stderr, "Mode 2 form 2 sector with error at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
-			if(edc_compute(0, m2sec, 0x91C) != get32lsb(m2sec + 0x91C))
+                        if(edc_compute(0, m2sec, 0x91C) != get32lsb(m2sec + 0x91C))
                             fprintf(stderr, "%02X:%02X:%02X: Failed EDC\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                         mode2f2errors++;
-			totalerrors++;
+                        totalerrors++;
                     }
                     if(sector[0x010] != sector[0x014] || sector[0x011] != sector[0x015] || sector[0x012] != sector[0x016] || sector[0x013] != sector[0x017])
-		    {
-			mode2f2warnings++;
-			totalwarnings++;
-			fprintf(stderr, "Subheader copies differ in mode 2 form 2 sector at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
-		    }
+                    {
+                        mode2f2warnings++;
+                        totalwarnings++;
+                        fprintf(stderr, "Subheader copies differ in mode 2 form 2 sector at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+                    }
                 }
                 else
                 {
@@ -443,23 +467,25 @@ static int8_t ecmify(
                         if(!ecc_checkpq(zeroaddress, m2sec, 52, 43, 86, 88, m2sec + 0x80C))
                             fprintf(stderr, "%02X:%02X:%02X: Failed ECC Q\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                         mode2f1errors++;
-			totalerrors++;
+                        totalerrors++;
                     }
                     if(sector[0x010] != sector[0x014] || sector[0x011] != sector[0x015] || sector[0x012] != sector[0x016] || sector[0x013] != sector[0x017])
                     {
                         mode2f1warnings++;
-			totalwarnings++;
+                        totalwarnings++;
                         fprintf(stderr, "Subheader copies differ in mode 2 form 1 sector at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                     }
                 }
             }
             else // Unknown sector mode!!!
             {
+                DPRINTF("ecmify(): Unknown data sector with mode %d at address %02X:%02X:%02X.\n", sector[0x00F], sector[0x00C], sector[0x00D], sector[0x00E]);
                 nondatasectors++;
             }
         }
         else // Non data sector
         {
+            DPRINTF("ecmify(): Non-data sector.\n");
             nondatasectors++;
         }
 
@@ -476,6 +502,11 @@ static int8_t ecmify(
         input_bytes_checked   += 2352;
         queue_start_ofs       += 2352;
         queue_bytes_available -= 2352;
+        
+        DPRINTF("ecmify.totalsectors = %d\n", totalsectors);
+        DPRINTF("ecmify.input_bytes_checked = %d\n", input_bytes_checked);
+        DPRINTF("ecmify.queue_start_ofs = %d\n", queue_start_ofs);
+        DPRINTF("ecmify.queue_bytes_available = %d\n", queue_bytes_available);
     }
 
     //
@@ -520,11 +551,14 @@ done:
 }
 
 int main(int argc, char** argv) {
+    DPRINTF("Entering main().\n");
     int returncode = 0;
     char* infilename  = NULL;
 
+    DPRINTF("Normalizing argv[0].\n");
     normalize_argv0(argv[0]);
 
+    DPRINTF("Showing banner.\n");
     banner();
     
     //
