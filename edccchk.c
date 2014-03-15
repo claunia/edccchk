@@ -503,7 +503,6 @@ static int8_t ecmify(
     //
     // Show report
     //
-    totalsectors++;
     printf("Non-data sectors........ %d\n", nondatasectors);
     printf("Mode 0 sectors.......... %d\n", mode0sectors);
     printf("\twith errors..... %d\n", mode0errors);

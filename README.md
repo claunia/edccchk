@@ -21,11 +21,6 @@ Features
 * Supports Mode 0, Mode 1 and Mode 2 data sectors, ignores Audio sectors.
 * Shows failing sectors as MSF.
 
-Known bugs
-==========
-
-* Total sectors count gets always 1 more than sectors exist.
-
 Changelog
 =========
 
@@ -46,6 +41,9 @@ Changelog
 
 2014/03/15	v1.25
 * Corrected mishandling of end of data. It was checking for a sector on what should be uninitialized memory instead of breaking main loop.
+
+2014/03/16	v1.26
+* Corrected counting 1 sector more than real.
 
 To-Do
 =====
