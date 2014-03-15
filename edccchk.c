@@ -304,8 +304,6 @@ static int8_t ecmify(
 
     DPRINTF("ecmify(): Entering main loop.\n");
     for(;;) {
-        int8_t detecttype = 0;
-
         //
         // Refill queue if necessary
         //
@@ -354,8 +352,7 @@ static int8_t ecmify(
             //
             // No data left to read -> quit
             //
-            detecttype = -1;
-
+            break;
         }
         
         uint8_t* sector = queue + queue_start_ofs;
@@ -488,12 +485,6 @@ static int8_t ecmify(
             DPRINTF("ecmify(): Non-data sector.\n");
             nondatasectors++;
         }
-
-
-        //
-        // Current type is negative ==> quit
-        //
-        if(detecttype < 0) { break; }
 
         //
         // Advance to the next sector
