@@ -1,4 +1,4 @@
-edccchk v1.25
+edccchk v1.26
 =============
 
 EDC/ECC checker for RAW (2352 bytes/sector) CD images
