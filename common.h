@@ -39,16 +39,17 @@ int _dowildcard = -1;
 
 ////////////////////////////////////////////////////////////////////////////////
 
+#include <ctype.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
-#include <ctype.h>
-#include <errno.h>
 #include <time.h>
+
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <limits.h>
 
 // MSC toolchains use sys/utime.h; everything else uses utime.h
 #if defined(_MSC_VER)
@@ -69,7 +70,7 @@ int _dowildcard = -1;
 
 // Fill in S_ISDIR
 #if !defined(_POSIX_VERSION) && !defined(S_ISDIR)
-#define S_ISDIR(m) (((m) & S_IFMT) == S_IFDIR)
+#define S_ISDIR(m) (((m)&S_IFMT) == S_IFDIR)
 #endif
 
 #if defined(__TURBOC__) || defined(__WATCOMC__) || defined(__MINGW32__) || defined(_MSC_VER)
@@ -112,11 +113,11 @@ int _dowildcard = -1;
 #elif defined(_MSC_VER)
 
 // On Visual Studio, use its integral types
-typedef   signed __int8   int8_t;
+typedef signed __int8    int8_t;
 typedef unsigned __int8  uint8_t;
-typedef   signed __int16  int16_t;
+typedef signed __int16   int16_t;
 typedef unsigned __int16 uint16_t;
-typedef   signed __int32  int32_t;
+typedef signed __int32   int32_t;
 typedef unsigned __int32 uint32_t;
 
 #else
@@ -171,10 +172,10 @@ typedef unsigned short uint16_t;
 // int32_t
 //
 #ifndef __int32_t_defined
-#if    INT_MIN == -2147483648 &&  INT_MAX == 2147483647 &&  UINT_MAX == 4294967295
+#if INT_MIN == -2147483648 && INT_MAX == 2147483647 && UINT_MAX == 4294967295
 typedef signed int int32_t;
 #elif LONG_MIN == -2147483648 && LONG_MAX == 2147483647 && ULONG_MAX == 4294967295
-typedef signed long int32_t;
+typedef signed long   int32_t;
 #else
 #error Unknown how to define int32_t!
 #endif
@@ -184,7 +185,7 @@ typedef signed long int32_t;
 // uint32_t
 //
 #ifndef __uint32_t_defined
-#if    INT_MIN == -2147483648 &&  INT_MAX == 2147483647 &&  UINT_MAX == 4294967295
+#if INT_MIN == -2147483648 && INT_MAX == 2147483647 && UINT_MAX == 4294967295
 typedef unsigned int uint32_t;
 #elif LONG_MIN == -2147483648 && LONG_MAX == 2147483647 && ULONG_MAX == 4294967295
 typedef unsigned long uint32_t;
@@ -256,113 +257,125 @@ typedef unsigned long uint32_t;
 // Add the ability to read off_t
 // (assumes off_t is a signed type)
 //
-off_t strtoofft(const char* s_start, char** endptr, int base) {
-    off_t max =
-        ((((off_t)1) << ((sizeof(off_t)*8)-2)) - 1) +
-        ((((off_t)1) << ((sizeof(off_t)*8)-2))    );
-    off_t min = ((-1) - max);
-    const char* s = s_start;
-    off_t accumulator;
-    off_t limit_tens;
-    off_t limit_ones;
-    int c;
-    int negative = 0;
-    int anyinput;
-    do {
+off_t strtoofft(const char *s_start, char **endptr, int base)
+{
+    off_t       max = ((((off_t)1) << ((sizeof(off_t) * 8) - 2)) - 1) + ((((off_t)1) << ((sizeof(off_t) * 8) - 2)));
+    off_t       min = ((-1) - max);
+    const char *s   = s_start;
+    off_t       accumulator;
+    off_t       limit_tens;
+    off_t       limit_ones;
+    int         c;
+    int         negative = 0;
+    int         anyinput;
+    do
+    {
         c = *s++;
     } while(isspace(c));
-    if(c == '-') {
+    if(c == '-')
+    {
         negative = 1;
-        c = *s++;
-    } else if (c == '+') {
+        c        = *s++;
+    }
+    else if(c == '+')
+    {
         c = *s++;
     }
-    if(
-        (base == 0 || base == 16) &&
-        c == '0' && (*s == 'x' || *s == 'X')
-    ) {
+    if((base == 0 || base == 16) && c == '0' && (*s == 'x' || *s == 'X'))
+    {
         c = s[1];
         s += 2;
         base = 16;
     }
-    if(!base) {
-        base = (c == '0') ? 8 : 10;
-    }
+    if(!base) { base = (c == '0') ? 8 : 10; }
     limit_ones = max % ((off_t)base);
     limit_tens = max / ((off_t)base);
-    if(negative) {
+    if(negative)
+    {
         limit_ones++;
-        if(limit_ones >= base) { limit_ones = 0; limit_tens++; }
+        if(limit_ones >= base)
+        {
+            limit_ones = 0;
+            limit_tens++;
+        }
     }
-    for(accumulator = 0, anyinput = 0;; c = *s++) {
-        if(isdigit(c)) {
-            c -= '0';
-        } else if(isalpha(c)) {
+    for(accumulator = 0, anyinput = 0;; c = *s++)
+    {
+        if(isdigit(c)) { c -= '0'; }
+        else if(isalpha(c))
+        {
             c -= isupper(c) ? 'A' - 10 : 'a' - 10;
-        } else {
+        }
+        else
+        {
             break;
         }
         if(c >= base) { break; }
-        if(
-            (anyinput < 0) ||
-            (accumulator < 0) ||
-            (accumulator > limit_tens) ||
-            (accumulator == limit_tens && c > limit_ones)
-        ) {
-            anyinput = -1;
-        } else {
+        if((anyinput < 0) || (accumulator < 0) || (accumulator > limit_tens) ||
+           (accumulator == limit_tens && c > limit_ones))
+        { anyinput = -1; }
+        else
+        {
             anyinput = 1;
             accumulator *= base;
             accumulator += c;
         }
     }
-    if(anyinput < 0) {
+    if(anyinput < 0)
+    {
         accumulator = negative ? min : max;
-        errno = ERANGE;
-    } else if(negative) {
+        errno       = ERANGE;
+    }
+    else if(negative)
+    {
         accumulator = -accumulator;
     }
-    if(endptr) {
-        *endptr = (char*)(anyinput ? (char*)s - 1 : s_start);
-    }
+    if(endptr) { *endptr = (char *)(anyinput ? (char *)s - 1 : s_start); }
     return accumulator;
 }
 
 //
 // Add the ability to print off_t
 //
-void fprinthex(FILE* f, off_t off, int min_digits) {
+void fprinthex(FILE *f, off_t off, int min_digits)
+{
     unsigned anydigit = 0;
-    int place;
-    for(place = 2 * sizeof(off_t) - 1; place >= 0; place--) {
-        if(sizeof(off_t) > (((size_t)(place)) / 2)) {
+    int      place;
+    for(place = 2 * sizeof(off_t) - 1; place >= 0; place--)
+    {
+        if(sizeof(off_t) > (((size_t)(place)) / 2))
+        {
             unsigned digit = (off >> (4 * place)) & 0xF;
             anydigit |= digit;
-            if(anydigit || place < min_digits) {
-                fputc("0123456789ABCDEF"[digit], f);
-            }
+            if(anydigit || place < min_digits) { fputc("0123456789ABCDEF"[digit], f); }
         }
     }
 }
 
-static void fprintdec_digit(FILE* f, off_t off) {
+static void fprintdec_digit(FILE *f, off_t off)
+{
     if(off == 0) { return; }
-    if(off >= 10) {
+    if(off >= 10)
+    {
         fprintdec_digit(f, off / ((off_t)10));
         off %= ((off_t)10);
     }
     fputc('0' + off, f);
 }
 
-void fprintdec(FILE* f, off_t off) {
-    if(off == 0) {
+void fprintdec(FILE *f, off_t off)
+{
+    if(off == 0)
+    {
         fputc('0', f);
         return;
     }
-    if(off < 0) {
+    if(off < 0)
+    {
         fputc('-', f);
         off = -off;
-        if(off < 0) {
+        if(off < 0)
+        {
             off_t ones = off % ((off_t)10);
             off /= ((off_t)10);
             off = -off;
@@ -380,32 +393,37 @@ void fprintdec(FILE* f, off_t off) {
 //
 #if !defined(_POSIX_VERSION)
 
-#if (defined(__MSDOS__) || defined(MSDOS)) && (defined(__TURBOC__) || defined(__WATCOMC__))
+#if(defined(__MSDOS__) || defined(MSDOS)) && (defined(__TURBOC__) || defined(__WATCOMC__))
 
 #include <dos.h>
-#include <io.h>
 #include <fcntl.h>
-int truncate(const char *filename, off_t size) {
-    if(size < 0) {
+#include <io.h>
+int truncate(const char *filename, off_t size)
+{
+    if(size < 0)
+    {
         errno = EINVAL;
         return -1;
     }
     //
     // Extend (or do nothing) if necessary
     //
-    {   off_t end;
-        FILE* f = fopen(filename, "rb");
-        if(!f) {
-            return -1;
-        }
-        if(fseeko(f, 0, SEEK_END) != 0) {
+    {
+        off_t end;
+        FILE *f = fopen(filename, "rb");
+        if(!f) { return -1; }
+        if(fseeko(f, 0, SEEK_END) != 0)
+        {
             fclose(f);
             return -1;
         }
         end = ftello(f);
-        if(end <= size) {
-            for(; end < size; end++) {
-                if(fputc(0, f) == EOF) {
+        if(end <= size)
+        {
+            for(; end < size; end++)
+            {
+                if(fputc(0, f) == EOF)
+                {
                     fclose(f);
                     return -1;
                 }
@@ -418,16 +436,17 @@ int truncate(const char *filename, off_t size) {
     //
     // Shrink if necessary (DOS-specific call)
     //
-    {   int doshandle = 0;
-        unsigned nwritten = 0;
-        if(_dos_open(filename, O_WRONLY, &doshandle)) {
-            return -1;
-        }
-        if(lseek(doshandle, size, SEEK_SET) == -1L) {
+    {
+        int      doshandle = 0;
+        unsigned nwritten  = 0;
+        if(_dos_open(filename, O_WRONLY, &doshandle)) { return -1; }
+        if(lseek(doshandle, size, SEEK_SET) == -1L)
+        {
             _dos_close(doshandle);
             return -1;
         }
-        if(_dos_write(doshandle, &doshandle, 0, &nwritten)) {
+        if(_dos_write(doshandle, &doshandle, 0, &nwritten))
+        {
             _dos_close(doshandle);
             return -1;
         }
@@ -439,11 +458,11 @@ int truncate(const char *filename, off_t size) {
     return 0;
 }
 
-#elif (defined(_WIN32) && defined(_MSC_VER))
+#elif(defined(_WIN32) && defined(_MSC_VER))
 
 #if defined(_MSC_VER)
 // Disable extension warnings for <windows.h> and friends
-#pragma warning (disable: 4226)
+#pragma warning(disable : 4226)
 #endif
 
 #include <windows.h>
@@ -452,27 +471,32 @@ int truncate(const char *filename, off_t size) {
 #define INVALID_SET_FILE_POINTER ((DWORD)(-1))
 #endif
 
-int truncate(const char *filename, off_t size) {
-    if(size < 0) {
+int truncate(const char *filename, off_t size)
+{
+    if(size < 0)
+    {
         errno = EINVAL;
         return -1;
     }
     //
     // Extend (or do nothing) if necessary
     //
-    {   off_t end;
-        FILE* f = fopen(filename, "rb");
-        if(!f) {
-            return -1;
-        }
-        if(fseeko(f, 0, SEEK_END) != 0) {
+    {
+        off_t end;
+        FILE *f = fopen(filename, "rb");
+        if(!f) { return -1; }
+        if(fseeko(f, 0, SEEK_END) != 0)
+        {
             fclose(f);
             return -1;
         }
         end = ftello(f);
-        if(end <= size) {
-            for(; end < size; end++) {
-                if(fputc(0, f) == EOF) {
+        if(end <= size)
+        {
+            for(; end < size; end++)
+            {
+                if(fputc(0, f) == EOF)
+                {
                     fclose(f);
                     return -1;
                 }
@@ -485,34 +509,31 @@ int truncate(const char *filename, off_t size) {
     //
     // Shrink if necessary (Windows-specific call)
     //
-    {   HANDLE f = CreateFile(
-            filename,
-            GENERIC_WRITE,
-            0,
-            NULL,
-            OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
-            NULL
-        );
-        if(f == INVALID_HANDLE_VALUE) {
-            return -1;
-        }
-        if(size > ((off_t)0x7FFFFFFFL)) {
+    {
+        HANDLE f = CreateFile(filename, GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+        if(f == INVALID_HANDLE_VALUE) { return -1; }
+        if(size > ((off_t)0x7FFFFFFFL))
+        {
             // use fancy 64-bit SetFilePointer
             LONG lo = size;
             LONG hi = size >> 32;
-            if(SetFilePointer(f, lo, &hi, FILE_BEGIN) == INVALID_SET_FILE_POINTER) {
-                CloseHandle(f);
-                return -1;
-            }
-        } else {
-            // use plain 32-bit SetFilePointer
-            if(SetFilePointer(f, size, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER) {
+            if(SetFilePointer(f, lo, &hi, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+            {
                 CloseHandle(f);
                 return -1;
             }
         }
-        if(!SetEndOfFile(f)) {
+        else
+        {
+            // use plain 32-bit SetFilePointer
+            if(SetFilePointer(f, size, NULL, FILE_BEGIN) == INVALID_SET_FILE_POINTER)
+            {
+                CloseHandle(f);
+                return -1;
+            }
+        }
+        if(!SetEndOfFile(f))
+        {
             CloseHandle(f);
             return -1;
         }
@@ -531,17 +552,18 @@ int truncate(const char *filename, off_t size) {
 //
 // Normalize argv[0]
 //
-void normalize_argv0(char* argv0) {
+void normalize_argv0(char *argv0)
+{
     size_t i;
     size_t start = 0;
-    int c;
-    for(i = 0; argv0[i]; i++) {
-        if(argv0[i] == '/' || argv0[i] == '\\') {
-            start = i + 1;
-        }
+    int    c;
+    for(i = 0; argv0[i]; i++)
+    {
+        if(argv0[i] == '/' || argv0[i] == '\\') { start = i + 1; }
     }
     i = 0;
-    do {
+    do
+    {
         c = ((unsigned char)(argv0[start + i]));
         if(c == '.') { c = 0; }
         if(c != 0) { c = tolower(c); }
@@ -551,7 +573,8 @@ void normalize_argv0(char* argv0) {
 
 ////////////////////////////////////////////////////////////////////////////////
 
-void printfileerror(FILE* f, const char* name) {
+void printfileerror(FILE *f, const char *name)
+{
     int e = errno;
     printf("Error: ");
     if(name) { printf("%s: ", name); }
@@ -569,19 +592,19 @@ void printfileerror(FILE* f, const char* name) {
 //
 #include <windows.h>
 
-static HWND getconsolewindow(void) {
-    HWND hConsoleWindow = NULL;
+static HWND getconsolewindow(void)
+{
+    HWND   hConsoleWindow = NULL;
     HANDLE k32;
     //
     // See if GetConsoleWindow is available (Windows 2000 or later)
     //
     k32 = GetModuleHandle(TEXT("kernel32.dll"));
-    if(k32) {
-        typedef HWND (* WINAPI gcw_t)(void);
+    if(k32)
+    {
+        typedef HWND (*WINAPI gcw_t)(void);
         gcw_t gcw = (gcw_t)GetProcAddress(k32, TEXT("GetConsoleWindow"));
-        if(gcw) {
-            hConsoleWindow = gcw();
-        }
+        if(gcw) { hConsoleWindow = gcw(); }
     }
     //
     // There is an alternative method that involves FindWindow, but it's too
@@ -590,8 +613,9 @@ static HWND getconsolewindow(void) {
     return hConsoleWindow;
 }
 
-void commandlinewarning(void) {
-    HWND hConsoleWindow;
+void commandlinewarning(void)
+{
+    HWND  hConsoleWindow;
     DWORD processId = 0;
     //
     // This trick doesn't work in Win9x
@@ -603,13 +627,12 @@ void commandlinewarning(void) {
     hConsoleWindow = getconsolewindow();
     if(!hConsoleWindow) { return; }
     GetWindowThreadProcessId(hConsoleWindow, &processId);
-    if(GetCurrentProcessId() == processId) {
-        printf(
-            "\n"
-            "Note: This is a command-line application.\n"
-            "It was meant to run from a Windows command prompt.\n\n"
-            "Press ENTER to close this window..."
-        );
+    if(GetCurrentProcessId() == processId)
+    {
+        printf("\n"
+               "Note: This is a command-line application.\n"
+               "It was meant to run from a Windows command prompt.\n\n"
+               "Press ENTER to close this window...");
         fflush(stdout);
         fgetc(stdin);
     }
@@ -629,7 +652,7 @@ void commandlinewarning(void) {}
 
 // 32-bit signed and unsigned mod seem buggy; this solves it
 unsigned long __umodsi3(unsigned long a, unsigned long b) { return a - (a / b) * b; }
-signed long __modsi3(signed long a, signed long b) { return a - (a / b) * b; }
+signed long   __modsi3(signed long a, signed long b) { return a - (a / b) * b; }
 
 // Some kind of soft float linkage issue?
 void __cmpdf2(void) {}
