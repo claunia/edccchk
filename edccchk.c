@@ -96,6 +96,7 @@ static uint32_t mode2f2warnings;
 static uint32_t totalsectors;
 static uint32_t totalerrors;
 static uint32_t totalwarnings;
+static uint32_t filledsectors;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -172,6 +173,7 @@ static int8_t ecc_checkpq(
             ecc_a = ecc_f_lut[ecc_a];
         }
         ecc_a = ecc_b_lut[ecc_f_lut[ecc_a] ^ ecc_b];
+
         if(
             ecc[major              ] != (ecc_a        ) ||
             ecc[major + major_count] != (ecc_a ^ ecc_b)
@@ -240,6 +242,7 @@ static int8_t ecmify(
 ) {
     DPRINTF("Entering ecmify(\"%s\").\n", infilename);
     int8_t returncode = 0;
+    int8_t filled = 0;
 
     FILE* in  = NULL;
 
@@ -301,6 +304,7 @@ static int8_t ecmify(
     mode2f2warnings = 0;
     totalsectors= 0;
     totalerrors= 0;
+    filledsectors=0;
 
     DPRINTF("ecmify(): Entering main loop.\n");
     for(;;) {
@@ -421,6 +425,22 @@ static int8_t ecmify(
 		    if(!ecc_checkpq(sector + 0xC, sector + 0x10, 52, 43, 86, 88, sector + 0x81C + 0xAC))
 			fprintf(stderr, "%02X:%02X:%02X: Failed ECC Q\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                 }
+
+                filled = 1;
+                for(int i = 0x010; i < 0x810; i++)
+                {
+                    if(sector[i] != 0x55)
+                    {
+                        filled = 0;
+                        break;
+                    }
+                }
+
+                if(filled)
+                {
+                    filledsectors++;
+                    fprintf(stderr, "Mode 1 sector at address: %02X:%02X:%02X is filled with 55h\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+                }
             }
             else if(sector[0x00F] == 0x02) // mode (1 byte)
             {
@@ -443,6 +463,22 @@ static int8_t ecmify(
                         mode2f2warnings++;
                         totalwarnings++;
                         fprintf(stderr, "Subheader copies differ in mode 2 form 2 sector at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+                    }
+
+                    filled = 1;
+                    for(int i = 0x018; i < 0x91C; i++)
+                    {
+                        if(sector[i] != 0x55)
+                        {
+                            filled = 0;
+                            break;
+                        }
+                    }
+
+                    if(filled)
+                    {
+                        filledsectors++;
+                        fprintf(stderr, "Mode 2 form 2 sector at address: %02X:%02X:%02X is filled with 55h\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                     }
                 }
                 else
@@ -471,6 +507,22 @@ static int8_t ecmify(
                         mode2f1warnings++;
                         totalwarnings++;
                         fprintf(stderr, "Subheader copies differ in mode 2 form 1 sector at address: %02X:%02X:%02X\n", sector[0x00C], sector[0x00D], sector[0x00E]);
+                    }
+
+                    filled = 1;
+                    for(int i = 0x018; i < 0x818; i++)
+                    {
+                        if(sector[i] != 0x55)
+                        {
+                            filled = 0;
+                            break;
+                        }
+                    }
+
+                    if(filled)
+                    {
+                        filledsectors++;
+                        fprintf(stderr, "Mode 2 form 1 sector at address: %02X:%02X:%02X is filled with 55h\n", sector[0x00C], sector[0x00D], sector[0x00E]);
                     }
                 }
             }
@@ -514,6 +566,7 @@ static int8_t ecmify(
     printf("Mode 2 form 2 sectors... %d\n", mode2f2sectors);
     printf("\twith errors..... %d\n", mode2f2errors);
     printf("\twith warnings... %d\n", mode2f2warnings);
+    printf("Filled sectors.......... %d\n", filledsectors);
     printf("Total sectors........... %d\n", totalsectors);
     printf("Total errors............ %d\n", totalerrors);
     printf("Total warnings.......... %d\n", totalwarnings);
