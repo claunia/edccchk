@@ -1,9 +1,9 @@
-edccchk v1.26
+edccchk v1.27
 =============
 
 EDC/ECC checker for RAW (2352 bytes/sector) CD images
 
-Copyright © 2013-2014 Natalia Portillo <claunia@claunia.com>
+Copyright © 2013-2020 Natalia Portillo <claunia@claunia.com>
 
 Based on ECM v1.03 Copyright © 2002-2011 Neill Corlett
 
@@ -44,6 +44,9 @@ Changelog
 
 2014/03/16	v1.26
 * Corrected counting 1 sector more than real.
+
+2020/05/03	v1.27
+* Detect sectors where user data has been filled with 0x55.
 
 To-Do
 =====
