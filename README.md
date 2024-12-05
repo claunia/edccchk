@@ -10,9 +10,12 @@ Based on ECM v1.03 Copyright © 2002-2011 Neill Corlett
 Usage
 =====
 
-edccchk <cdimage>
+`edccchk <cdimage>`
 
-<cdimage> RAW 2352 bytes/sector image of a CD.
+Where `<cdimage>` is a RAW 2352 bytes/sector image of a CD.
+
+This utility is also available as a nix flake:
+`nix run github:claunia/edccchk`
 
 Features
 ========
